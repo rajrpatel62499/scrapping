@@ -2,12 +2,8 @@ const puppeteer = require('puppeteer');
 const loadCsv = require('./loadCSV');
 const logger = require('./logger');
 
-
-
 const url = `https://examsnet.com/test/physical-world-and-measurements/`;
-(async () => {
-    const urls = await loadCsv();
-
+const initBrowser = async () => {
     const browser = await puppeteer.launch({ 
         headless: false, 
         devtools: true,
@@ -18,6 +14,21 @@ const url = `https://examsnet.com/test/physical-world-and-measurements/`;
         }
     });
     const page = await browser.newPage();
+    return { browser, page};
+}
+
+const processEachPage = () => {
+
+}
+
+const extractFolderNameFromUrl = (url) => {
+    
+}
+
+(async () => {
+    const urls = await loadCsv();
+
+    const { browser, page } = await initBrowser();
     
     await page.setViewport({ height: 1080, width: 1920 })
     await page.goto(url);
@@ -29,7 +40,8 @@ const url = `https://examsnet.com/test/physical-world-and-measurements/`;
     }
 
     const totalQuestions = await getQuestionCount();
-    logger.info(`Total Questions: ${totalQuestions}`);
+    // logger.info(`Total Questions: ${totalQuestions}`);
+    console.log(`Total Questions: ${totalQuestions}`);
 
     for (let i = 0; i < totalQuestions; i++) {
         
@@ -56,6 +68,3 @@ const url = `https://examsnet.com/test/physical-world-and-measurements/`;
 })();
 
 
-const processEachPage = () => {
-    
-}
