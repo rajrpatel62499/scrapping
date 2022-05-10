@@ -4,6 +4,7 @@
   "description": "",
   "main": "scrapper.js",
   "scripts": {
+    "start": "tsc scrapper.ts && node ./scrapper.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -11,6 +12,7 @@
   "dependencies": {
     "csv-parser": "^3.0.0",
     "puppeteer": "^14.0.0",
+    "typescript": "^4.6.4",
     "winston": "^3.7.2"
   }
 }
