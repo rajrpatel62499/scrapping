@@ -15,6 +15,9 @@ const logger = createLogger({
   transports: [new transports.File({ filename: 'file.log'})],
   exceptionHandlers: [new transports.File({ filename: "exceptions.log" })],
   rejectionHandlers: [new transports.File({ filename: "rejections.log" })],
+  // transports: [new transports.Console({})],
+  // exceptionHandlers: [new transports.Console({})],
+  // rejectionHandlers: [new transports.Console({})],
 });
 
 module.exports = logger ;

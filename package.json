@@ -4,7 +4,8 @@
   "description": "",
   "main": "scrapper.js",
   "scripts": {
-    "start": "tsc scrapper.ts && node ./scrapper.js",
+    "start": "node ./scrapper.js",
+    "ts": "tsc scrapper.ts && node ./scrapper.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
