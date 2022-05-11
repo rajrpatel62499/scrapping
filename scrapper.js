@@ -4,9 +4,8 @@ const logger = require('./logger');
 const { convertImageToMathml } = require('./mathpix');
 const { makeDirIfNotExist } = require("./util");
 
-const storeImage = true;
+const storeImage = false;
 
-// const url = `https://examsnet.com/test/physical-world-and-measurements/`;
 const initBrowser = async () => {
     const browser = await puppeteer.launch({ 
         headless: false, 
@@ -30,6 +29,16 @@ const extractFolderNameFromUrl = (url) => {
     }
 }   
 
+const getMathmlFromBase64 = async (base64) => {
+    // const base64 = Buffer.from(file).toString('base64') // old for file buffer.  
+    const data = await convertImageToMathml(base64);
+    if (data && data?.data?.html) {
+        const mathml = data.data.html;
+        return mathml;
+    }
+    return '';
+}
+
 (async () => {
 
     try {
@@ -40,8 +49,8 @@ const extractFolderNameFromUrl = (url) => {
         await page.setViewport({ height: 1080, width: 1920 })
         
         for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
+            const url = urls[urlIndex];
             try {
-                const url = urls[urlIndex];
                 console.log(`WORKING ON URL: ${url} `);
                 await page.goto(url);
             
@@ -73,44 +82,61 @@ const extractFolderNameFromUrl = (url) => {
                         } else {
                             file = await questionDiv.screenshot();
                         }
-                        const base64 = Buffer.from(file).toString('base64') 
-                        const data = await convertImageToMathml(base64);
-                        if (data && data?.data?.html) {
-                            const mathml = data.data.html;
-                        }
+                        // capture option
+                        const opt = storeImage ? { path: `${dir}/question.png`, } : {};
+                        let base64 = await option.screenshot({ encoding: 'base64', ...opt});
+
+                        // convert base64 to mathml
+                        const mathml = await getMathmlFromBase64(base64);
+                        return mathml;
                     }
                 
                     const cropAnswers = async () => {
                         try {
-                            const answers = await page.$$("#answers > .list-group-item");
+                            // validate the answer 
+                            const [validateBtn] = await page.$x("//a[contains(.,'Validate')]");
+                            await validateBtn.click();
+                            
+                            // fetching answers divs
+                            const options = await page.$$("#answers > .list-group-item");
     
-                            for (let answerIndex = 0; answerIndex < answers.length; answerIndex++) {
-                                const answer = answers[answerIndex];
+                            // looping through options
+                            const promises = options.map(async (option, optIndex) => {
+                                let isAnswer = false;
+                                // finding the right answer
+                                try {
+                                    await option.$eval('.rightanswer', node => node);
+                                    isAnswer = true;
+                                } catch (error) {}
+
+                                // waiting for a sec to capture all options perfectly. required step 
                                 await page.waitForTimeout(1000);
-    
-                                if (storeImage) {
-                                    file = await answer.screenshot({ path: `${dir}/option-${answerIndex + 1}.png` });
-                                } else {
-                                    file = await answer.screenshot();
-                                }
-                                const base64 = Buffer.from(file).toString('base64') 
-                                const data = await convertImageToMathml(base64);
-                                if (data && data?.data?.html) {
-                                    const mathml = data.data.html;
-                                }
-                            }
+
+                                // capture option
+                                const opt = storeImage ? { path: `${dir}/option-${optIndex + 1}.png`, } : {};
+                                let base64 = await option.screenshot({ encoding: 'base64', ...opt});
+
+                                // convert base64 to mathml
+                                const mathml = await getMathmlFromBase64(base64);
+
+                                return { isAnswer, mathml };
+                            })
+                            const out = await Promise.all(promises);
+                            console.log(out);
+                            return out;
     
                         } catch (error) {
                             console.error(error);                        
                         }
                     }
             
-                    await cropQuestion();
-                    await cropAnswers();
+                    const question = await cropQuestion();
+                    const answers = await cropAnswers();
                     console.log(`Done cropping Question ${queIndex+1} `);
                 }
             } catch (error) {
-                urlIndex++;
+                urlIndex++; // will move forward to another url if any issue. 
+                logger.warn(`Found problem in URL SKIPPING ${url}`);
             }
             
         }
