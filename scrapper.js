@@ -133,6 +133,9 @@ const getMathmlFromBase64 = async (base64) => {
                     const question = await cropQuestion();
                     const answers = await cropAnswers();
                     console.log(`Done cropping Question ${queIndex+1} `);
+
+                    // make question object and store it to the database. 
+                    
                 }
             } catch (error) {
                 urlIndex++; // will move forward to another url if any issue. 
