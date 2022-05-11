@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
-const loadCsv = require('./loadCSV');
-const logger = require('./logger');
-const { convertImageToMathml } = require('./mathpix');
+const loadCsv = require('./utils/loadCSV');
+const logger = require('./utils/logger');
+const { convertImageToMathml } = require('./api/mathpix');
 const { makeDirIfNotExist } = require("./util");
 
 const storeImage = false;
@@ -76,15 +76,10 @@ const getMathmlFromBase64 = async (base64) => {
     
                     const cropQuestion = async () => {
                         const questionDiv = await page.$("#imagewrap");
-                        let file;
-                        if (storeImage) {
-                            file = await questionDiv.screenshot({ path: `${dir}/question.png` });
-                        } else {
-                            file = await questionDiv.screenshot();
-                        }
+
                         // capture option
                         const opt = storeImage ? { path: `${dir}/question.png`, } : {};
-                        let base64 = await option.screenshot({ encoding: 'base64', ...opt});
+                        let base64 = await questionDiv.screenshot({ encoding: 'base64', ...opt});
 
                         // convert base64 to mathml
                         const mathml = await getMathmlFromBase64(base64);
@@ -135,7 +130,7 @@ const getMathmlFromBase64 = async (base64) => {
                     console.log(`Done cropping Question ${queIndex+1} `);
 
                     // make question object and store it to the database. 
-                    
+
                 }
             } catch (error) {
                 urlIndex++; // will move forward to another url if any issue. 
