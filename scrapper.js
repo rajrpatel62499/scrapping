@@ -1,8 +1,10 @@
 const puppeteer = require('puppeteer');
 const loadCsv = require('./loadCSV');
 const logger = require('./logger');
-var fs = require('fs');
+const { convertImageToMathml } = require('./mathpix');
+const { makeDirIfNotExist } = require("./util");
 
+const storeImage = true;
 
 // const url = `https://examsnet.com/test/physical-world-and-measurements/`;
 const initBrowser = async () => {
@@ -19,10 +21,6 @@ const initBrowser = async () => {
     return { browser, page};
 }
 
-const processEachPage = () => {
-
-}
-
 const extractFolderNameFromUrl = (url) => {
     const folderName = url.split("/test/")[1];
     if(folderName.endsWith("/")) {
@@ -31,15 +29,6 @@ const extractFolderNameFromUrl = (url) => {
         return folderName
     }
 }   
-
-const makeDirIfNotExist = (dir) => {
-    if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir, { recursive: true });
-        console.log(`Directory Created: ${dir} `);
-        return true;
-    }
-    return false;
-}
 
 (async () => {
 
@@ -71,11 +60,23 @@ const makeDirIfNotExist = (dir) => {
                 await page.goto(url + `${queIndex+1}`);
                 
                 const dir = `./images/${folderName}/${queIndex+1}`;
-                makeDirIfNotExist(dir);
+                if (storeImage) {
+                    makeDirIfNotExist(dir);
+                }
 
                 const cropQuestion = async () => {
                     const questionDiv = await page.$("#imagewrap");
-                    await questionDiv.screenshot({ path: `${dir}/question.png` });
+                    let file;
+                    if (storeImage) {
+                        file = await questionDiv.screenshot({ path: `${dir}/question.png` });
+                    } else {
+                        file = await questionDiv.screenshot();
+                    }
+                    const base64 = Buffer.from(file).toString('base64') 
+                    const data = await convertImageToMathml(base64);
+                    if (data && data?.data?.html) {
+                        const mathml = data.data.html;
+                    }
                 }
             
                 const cropAnswers = async () => {
@@ -85,7 +86,17 @@ const makeDirIfNotExist = (dir) => {
                         for (let answerIndex = 0; answerIndex < answers.length; answerIndex++) {
                             const answer = answers[answerIndex];
                             await page.waitForTimeout(1000);
-                            await answer.screenshot({ path: `${dir}/option-${answerIndex + 1}.png` }) 
+
+                            if (storeImage) {
+                                file = await answer.screenshot({ path: `${dir}/option-${answerIndex + 1}.png` });
+                            } else {
+                                file = await answer.screenshot();
+                            }
+                            const base64 = Buffer.from(file).toString('base64') 
+                            const data = await convertImageToMathml(base64);
+                            if (data && data?.data?.html) {
+                                const mathml = data.data.html;
+                            }
                         }
 
                     } catch (error) {

@@ -21,23 +21,23 @@ chrome_driver.get("https://examsnet.com/test/physical-world-and-measurements/")
 
 time.sleep(4)
 
-# element = chrome_driver.find_element_by_id('question')
-# print(element.text)
-# location = element.location
+element = chrome_driver.find_element_by_id('question')
+print(element.text)
+location = element.location
 
-# question_element = chrome_driver.find_element_by_id('mquestion')
-# size = question_element.size
+question_element = chrome_driver.find_element_by_id('mquestion')
+size = question_element.size
 
-# print(location)
-# print(size)
+print(location)
+print(size)
 
-# chrome_driver.execute_script("window.scrollTo(" +str(location['x']) + "," + str(location['y'])+ ")")
-# chrome_driver.save_screenshot("pageImage.png")
+chrome_driver.execute_script("window.scrollTo(" +str(location['x']) + "," + str(location['y'])+ ")")
+chrome_driver.save_screenshot("pageImage.png")
 
-# width = location['x']+size['width']
-# height = location['y']+size['height']
+width = location['x']+size['width']
+height = location['y']+size['height']
 
-# im = Image.open('pageImage.png')
-# im_cropped = im.crop((20+int(location['x']), 40, int(width)+int(width)/4, int(size['height'])+int(height)/4))
-# im.save('element.png')
-# im_cropped.show()
+im = Image.open('pageImage.png')
+im_cropped = im.crop((20+int(location['x']), 40, int(width)+int(width)/4, int(size['height'])+int(height)/4))
+im.save('element.png')
+im_cropped.show()
