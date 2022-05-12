@@ -3,7 +3,7 @@ const { default: axios } = require("axios");
 const config = {
     userName: 'examsnetuser1@yopmail.com', 
     password: 'admin@123',
-    backendUrl: 'https://v1-dev-backend.tryjackett.com'
+    backendUrl: 'https://v1-dev-backend.tryjackett.com',
 }
 
 const loginToDB = async () => {
@@ -34,13 +34,65 @@ const loginToDB = async () => {
     }
 }
 
+const constructQuestionObj =  (user, question, opts) => {
+    const questionType = 'MCQ';
+    const username = user.username;
+    const questionText = question;
+    const options = opts.map(x => ({ optionText: x.mathml, isAnswer: x.isAnswer, images: [] }));
 
-loginToDB().then(res => {
-    console.log(res);
-    if (res) {
-        console.log("LOGGED IN");
+    const questionData = {
+        username: username,
+        author: username,
+        questionDifficulty:  "",
+        questionText:  questionText,
+        questionType:  questionType,
+        options: options,
+        images: [],
+        marks: '',
+        answers: [],
+        // answers: [{ answerText: '', images: [] }],
+
+        // tags
+        tag: {
+          subject: '',
+          chapter: '', //TODO: folder name
+          topic: '',
+          curriculum: '',
+          classes: [''],
+          bloomTaxonomies: [''],
+          customTags: [''],
+        },
+        childQuestions: []
+    };
+    return questionData;
+}
+
+const addQuestionToDB = async(user, questionText, opts) => {
+    const url = `${config.backendUrl}/api/v1/questions`;
+    const headers = {
+        'Content-type': 'application/json',
+        'authorization': `Bearer ${user.token}`
     }
-})
+    
+    const payload = constructQuestionObj(user, questionText, opts)
 
-module.exports = {loginToDB};
+    const addQuestionApiCall = () => axios({
+        url: url, 
+        method: 'post',
+        headers: headers,
+        data: payload
+    });
+
+    console.log(payload);
+
+    try {
+        const res = await addQuestionApiCall();
+        return res;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
+module.exports = { config, loginToDB, addQuestionToDB };
 

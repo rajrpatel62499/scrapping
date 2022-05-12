@@ -3,6 +3,7 @@ const loadCsv = require('./utils/loadCSV');
 const logger = require('./utils/logger');
 const { convertImageToMathml } = require('./api/mathpix');
 const { makeDirIfNotExist } = require("./util");
+const db = require('./api/db');
 
 const storeImage = false;
 
@@ -47,6 +48,8 @@ const getMathmlFromBase64 = async (base64) => {
     
         const { browser, page } = await initBrowser();
         await page.setViewport({ height: 1080, width: 1920 })
+
+        const user = await db.loginToDB();
         
         for (let urlIndex = 0; urlIndex < urls.length; urlIndex++) {
             const url = urls[urlIndex];
@@ -68,6 +71,7 @@ const getMathmlFromBase64 = async (base64) => {
                 for (let queIndex = 0; queIndex < totalQuestions; queIndex++) {
                     console.log(`Fetching question ${queIndex+1} images`);
                     await page.goto(url + `${queIndex+1}`);
+                    await page.waitForTimeout(1000);
                     
                     const dir = `./images/${folderName}/${queIndex+1}`;
                     if (storeImage) {
@@ -83,16 +87,17 @@ const getMathmlFromBase64 = async (base64) => {
 
                         // convert base64 to mathml
                         const mathml = await getMathmlFromBase64(base64);
-                        return mathml;
+                        return mathml.replace(/style=\"display: none\"/g,'');
                     }
                 
-                    const cropAnswers = async () => {
+                    const cropOptions = async () => {
                         try {
                             // validate the answer 
                             const [validateBtn] = await page.$x("//a[contains(.,'Validate')]");
                             await validateBtn.click();
                             
                             // fetching answers divs
+                            await page.waitForSelector("#answers > .list-group-item");
                             const options = await page.$$("#answers > .list-group-item");
     
                             // looping through options
@@ -112,12 +117,14 @@ const getMathmlFromBase64 = async (base64) => {
                                 let base64 = await option.screenshot({ encoding: 'base64', ...opt});
 
                                 // convert base64 to mathml
-                                const mathml = await getMathmlFromBase64(base64);
+                                const preMathML = await getMathmlFromBase64(base64);
+
+                                const mathml = preMathML.replace(/style=\"display: none\"/g,'');
 
                                 return { isAnswer, mathml };
                             })
                             const out = await Promise.all(promises);
-                            console.log(out);
+                            // console.log(out);
                             return out;
     
                         } catch (error) {
@@ -126,13 +133,21 @@ const getMathmlFromBase64 = async (base64) => {
                     }
             
                     const question = await cropQuestion();
-                    const answers = await cropAnswers();
+                    const options = await cropOptions();
                     console.log(`Done cropping Question ${queIndex+1} `);
 
                     // make question object and store it to the database. 
-
+                    try {
+                        const res = await db.addQuestionToDB(user, question, options);
+                        console.log(`Question Added to user account ${res}`);
+                    } catch (error) {
+                        console.error(`Error in adding question ${error}`);
+                    }
                 }
             } catch (error) {
+                if (error && error.message == 'Protocol error (Page.navigate): Session closed. Most likely the page has been closed.') {
+                    throw error;
+                }
                 urlIndex++; // will move forward to another url if any issue. 
                 logger.warn(`Found problem in URL SKIPPING ${url}`);
             }
