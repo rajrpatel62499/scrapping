@@ -35,7 +35,7 @@ const getMathmlFromBase64 = async (base64) => {
     const data = await convertImageToMathml(base64);
     if (data && data?.data?.html) {
         const mathml = data.data.html;
-        return mathml;
+        return mathml.replace(/style=\"display: none\"/g,'');
     }
     return '';
 }
@@ -78,6 +78,11 @@ const getMathmlFromBase64 = async (base64) => {
                         makeDirIfNotExist(dir);
                     }
     
+                    // validate the answer 
+                    const [validateBtn] = await page.$x("//a[contains(.,'Validate')]");
+                    await validateBtn.click();
+
+                                                
                     const cropQuestion = async () => {
                         const questionDiv = await page.$("#imagewrap");
 
@@ -87,15 +92,11 @@ const getMathmlFromBase64 = async (base64) => {
 
                         // convert base64 to mathml
                         const mathml = await getMathmlFromBase64(base64);
-                        return mathml.replace(/style=\"display: none\"/g,'');
+                        return mathml;
                     }
                 
                     const cropOptions = async () => {
                         try {
-                            // validate the answer 
-                            const [validateBtn] = await page.$x("//a[contains(.,'Validate')]");
-                            await validateBtn.click();
-                            
                             // fetching answers divs
                             await page.waitForSelector("#answers > .list-group-item");
                             const options = await page.$$("#answers > .list-group-item");
@@ -117,9 +118,7 @@ const getMathmlFromBase64 = async (base64) => {
                                 let base64 = await option.screenshot({ encoding: 'base64', ...opt});
 
                                 // convert base64 to mathml
-                                const preMathML = await getMathmlFromBase64(base64);
-
-                                const mathml = preMathML.replace(/style=\"display: none\"/g,'');
+                                const mathml = await getMathmlFromBase64(base64);
 
                                 return { isAnswer, mathml };
                             })
@@ -131,14 +130,28 @@ const getMathmlFromBase64 = async (base64) => {
                             console.error(error);                        
                         }
                     }
+
+                    const cropAnswer = async () => {
+                        // grab solution here and add it to answers table. 
+                        // const sol = await page.$eval("#answerstatus", ele => ele.querySelectorAll("div"));
+                        const sol = await (await (await page.$("#answerstatus")).$$("div")).at(1);
+                        // const inn = await sol.evaluate(x => x.innerHTML);
+                        // capture solution
+                        const opt = storeImage ? { path: `${dir}/solution.png`, } : {};
+                        let base64 = await sol.screenshot({ encoding: 'base64', ...opt});
+                        // convert base64 to mathml
+                        const answer = await getMathmlFromBase64(base64);
+                        return answer;
+                    }
             
                     const question = await cropQuestion();
                     const options = await cropOptions();
+                    const answer = await cropAnswer();
                     console.log(`Done cropping Question ${queIndex+1} `);
 
                     // make question object and store it to the database. 
                     try {
-                        const res = await db.addQuestionToDB(user, question, options);
+                        const res = await db.addQuestionToDB(user, question, options, answer);
                         console.log(`Question Added to user account ${res}`);
                     } catch (error) {
                         console.error(`Error in adding question ${error}`);

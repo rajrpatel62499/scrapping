@@ -34,11 +34,12 @@ const loginToDB = async () => {
     }
 }
 
-const constructQuestionObj =  (user, question, opts) => {
+const constructQuestionObj =  (user, question, opts, answer) => {
     const questionType = 'MCQ';
     const username = user.username;
     const questionText = question;
     const options = opts.map(x => ({ optionText: x.mathml, isAnswer: x.isAnswer, images: [] }));
+    const answers = [{ answerText: answer, images: []}];
 
     const questionData = {
         username: username,
@@ -49,7 +50,7 @@ const constructQuestionObj =  (user, question, opts) => {
         options: options,
         images: [],
         marks: '',
-        answers: [],
+        answers: answers,
         // answers: [{ answerText: '', images: [] }],
 
         // tags
@@ -67,14 +68,14 @@ const constructQuestionObj =  (user, question, opts) => {
     return questionData;
 }
 
-const addQuestionToDB = async(user, questionText, opts) => {
+const addQuestionToDB = async(user, questionText, opts, answer) => {
     const url = `${config.backendUrl}/api/v1/questions`;
     const headers = {
         'Content-type': 'application/json',
         'authorization': `Bearer ${user.token}`
     }
     
-    const payload = constructQuestionObj(user, questionText, opts)
+    const payload = constructQuestionObj(user, questionText, opts, answer)
 
     const addQuestionApiCall = () => axios({
         url: url, 
