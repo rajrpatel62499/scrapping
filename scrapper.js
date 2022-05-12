@@ -151,7 +151,8 @@ const getMathmlFromBase64 = async (base64) => {
 
                     // make question object and store it to the database. 
                     try {
-                        const res = await db.addQuestionToDB(user, question, options, answer);
+                        const res = await db.addQuestionToDB(user,
+                            { question, options, answer, chapter: folderName });
                         console.log(`Question Added to user account ${res}`);
                     } catch (error) {
                         console.error(`Error in adding question ${error}`);

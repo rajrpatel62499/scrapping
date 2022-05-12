@@ -34,7 +34,7 @@ const loginToDB = async () => {
     }
 }
 
-const constructQuestionObj =  (user, question, opts, answer) => {
+const constructQuestionObj =  (user, {question, opts, answer, chapter}) => {
     const questionType = 'MCQ';
     const username = user.username;
     const questionText = question;
@@ -56,7 +56,7 @@ const constructQuestionObj =  (user, question, opts, answer) => {
         // tags
         tag: {
           subject: '',
-          chapter: '', //TODO: folder name
+          chapter: chapter, //TODO: folder name
           topic: '',
           curriculum: '',
           classes: [''],
@@ -68,14 +68,14 @@ const constructQuestionObj =  (user, question, opts, answer) => {
     return questionData;
 }
 
-const addQuestionToDB = async(user, questionText, opts, answer) => {
+const addQuestionToDB = async(user, {question, options, answer, chapter}) => {
     const url = `${config.backendUrl}/api/v1/questions`;
     const headers = {
         'Content-type': 'application/json',
         'authorization': `Bearer ${user.token}`
     }
     
-    const payload = constructQuestionObj(user, questionText, opts, answer)
+    const payload = constructQuestionObj(user, { question, opts: options, answer, chapter})
 
     const addQuestionApiCall = () => axios({
         url: url, 
