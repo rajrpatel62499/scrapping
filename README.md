@@ -3,7 +3,7 @@
  - make question object of our db shape and store it to database. 
 
 # How To Run 
-- install latest nodejs in your machine. 😶
+- install node modules to your project by `npm install`. 😶
 - run `npm run start` in the current folder of the project. 😎
 - Enjoy Scrapping 😁🥳
 
